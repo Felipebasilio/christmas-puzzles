@@ -15,13 +15,14 @@ var Rotate = function (_a) {
     if (direction === Direction.LEFT) {
         var newIndex_1 = currentIndex - amount;
         while (newIndex_1 < 0) {
-            console.log({ newIndex: newIndex_1, amount: amount, currentIndex: currentIndex });
+            console.log({ currentIndex: currentIndex, amount: amount, newIndex: newIndex_1 });
             newIndex_1 += arraySize;
         }
         return newIndex_1;
     }
     var newIndex = currentIndex + amount;
     while (newIndex >= arraySize) {
+        console.log({ currentIndex: currentIndex, amount: amount, newIndex: newIndex });
         newIndex -= arraySize;
     }
     return newIndex;
