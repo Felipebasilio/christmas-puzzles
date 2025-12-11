@@ -1,12 +1,11 @@
-import * as fs from "fs";
-import * as path from "path";
+import { readInputFile } from "./read-file";
 
 export enum Direction {
   LEFT = "left",
   RIGHT = "right",
 }
 
-interface IRotation {
+export interface IRotation {
   direction: Direction;
   amount: number;
 }
@@ -18,53 +17,102 @@ type RotateProps = {
 
 const arraySize = 100;
 
+interface IZeroHitConditionOnClick {
+  currentIndex: number;
+  amount: number;
+  direction: Direction;
+}
+
+const upperCondition = ({
+  currentIndex,
+  amount,
+  direction,
+}: IZeroHitConditionOnClick) => {
+  const isDirectionIncreasing = direction === Direction.RIGHT;
+  const isCrossingZeroOnce = currentIndex + amount > 100 && amount < 100;
+  return isDirectionIncreasing && isCrossingZeroOnce;
+};
+
+const lowerCondition = ({
+  currentIndex,
+  amount,
+  direction,
+}: IZeroHitConditionOnClick) => {
+  if (currentIndex === 0) return false;
+  const isDirectionDecreasing = direction === Direction.LEFT;
+  const isCrossingZeroOnce = currentIndex < amount && amount < 100;
+  return isDirectionDecreasing && isCrossingZeroOnce;
+};
+
 export const Rotate = ({ currentIndex, rotation }: RotateProps) => {
   const { direction, amount } = rotation;
-
+  let numberoOfTimesZeroWasHit = 0;
+  let newIndex = currentIndex;
+  let numberOfZeroHitsNonFullRotation = 0;
+  
   if (direction === Direction.LEFT) {
-    let newIndex = currentIndex - amount;
+    
+    // Hits zero but not a full rotation
+    if (lowerCondition({ currentIndex, amount, direction })) numberOfZeroHitsNonFullRotation++;
+
+    newIndex = currentIndex - amount;
     while (newIndex < 0) {
-      console.log({ currentIndex, amount, newIndex });
       newIndex += arraySize;
+
+      if (newIndex < 0) {
+        numberoOfTimesZeroWasHit++;
+      }
     }
-    return newIndex;
+
+    // console.log({dir: 'left', numberoOfTimesZeroWasHit, numberOfZeroHitsNonFullRotation });
+
+    const numberOfZeroHitsOnClick =
+      numberoOfTimesZeroWasHit + numberOfZeroHitsNonFullRotation;
+
+    return { newIndex, numberOfZeroHitsOnClick };
   }
 
-  let newIndex = currentIndex + amount;
+  if (upperCondition({ currentIndex, amount, direction })) numberOfZeroHitsNonFullRotation++;
+
+  newIndex = currentIndex + amount;
   while (newIndex >= arraySize) {
-    console.log({ currentIndex, amount, newIndex });
     newIndex -= arraySize;
+
+    if (newIndex >= arraySize) {
+      numberoOfTimesZeroWasHit++;
+    }
   }
-  return newIndex;
+
+  // console.log({dir: 'right', numberoOfTimesZeroWasHit, numberOfZeroHitsNonFullRotation });
+
+  const numberOfZeroHitsOnClick =
+    numberoOfTimesZeroWasHit + numberOfZeroHitsNonFullRotation;
+
+  return { newIndex, numberOfZeroHitsOnClick };
 };
 
-export const readInputFile = (): IRotation[] => {
-  const rootDir = process.cwd();
-  const filePath = path.join(rootDir, "input2.txt");
-  // const filePath = path.join(rootDir, 'input.txt');
-  const input = fs.readFileSync(filePath, "utf8");
-
-  const lines = input.split("\n").map((line) => line.trim());
-  return lines.map((line) => {
-    const direction = line[0] == "L" ? Direction.LEFT : Direction.RIGHT;
-    const amount = line.slice(1);
-    return { direction: direction as Direction, amount: parseInt(amount) };
-  });
-};
-
-export const getValue = () => {
+export const getAmountOfTimesZeroIsHit = () => {
   const initialValue = 50;
   const rotations = readInputFile();
   let numberOfZeroes = 0;
 
   let currentIndex = initialValue;
   for (const rotation of rotations) {
-    debugger;
-    currentIndex = Rotate({ currentIndex, rotation });
+    const { newIndex, numberOfZeroHitsOnClick } = Rotate({
+      currentIndex,
+      rotation,
+    });
+
+    currentIndex = newIndex;
+
     if (currentIndex === 0) {
+      //ends at zero
       numberOfZeroes++;
-      // console.log({rotation, currentIndex, numberOfZeroes});
     }
+
+    // console.log({ numberOfZeroes, numberOfZeroHitsOnClick });
+
+    numberOfZeroes += numberOfZeroHitsOnClick;
   }
   return numberOfZeroes;
 };

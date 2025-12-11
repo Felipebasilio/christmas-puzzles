@@ -1,4 +1,4 @@
-import { getValue } from "./src/utils";
+import { getAmountOfTimesZeroIsHit } from "./src/utils";
 
-const result = getValue();
+const result = getAmountOfTimesZeroIsHit();
 console.log(result);
