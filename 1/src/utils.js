@@ -24,37 +24,25 @@ var lowerCondition = function (_a) {
 };
 var Rotate = function (_a) {
     var currentIndex = _a.currentIndex, rotation = _a.rotation;
+    var newIndex = currentIndex;
     var direction = rotation.direction, amount = rotation.amount;
     var numberoOfTimesZeroWasHit = 0;
-    var newIndex = currentIndex;
-    var numberOfZeroHitsNonFullRotation = 0;
-    if (direction === Direction.LEFT) {
-        // Hits zero but not a full rotation
-        if (lowerCondition({ currentIndex: currentIndex, amount: amount, direction: direction }))
-            numberOfZeroHitsNonFullRotation++;
-        newIndex = currentIndex - amount;
-        while (newIndex < 0) {
+    for (var i = 0; i < amount; i++) {
+        if (direction === Direction.LEFT)
+            newIndex--;
+        else
+            newIndex++;
+        if (newIndex < 0)
             newIndex += arraySize;
-            if (newIndex < 0) {
-                numberoOfTimesZeroWasHit++;
-            }
-        }
-        // console.log({dir: 'left', numberoOfTimesZeroWasHit, numberOfZeroHitsNonFullRotation });
-        var numberOfZeroHitsOnClick_1 = numberoOfTimesZeroWasHit + numberOfZeroHitsNonFullRotation;
-        return { newIndex: newIndex, numberOfZeroHitsOnClick: numberOfZeroHitsOnClick_1 };
-    }
-    if (upperCondition({ currentIndex: currentIndex, amount: amount, direction: direction }))
-        numberOfZeroHitsNonFullRotation++;
-    newIndex = currentIndex + amount;
-    while (newIndex >= arraySize) {
-        newIndex -= arraySize;
-        if (newIndex >= arraySize) {
+        if (newIndex >= arraySize)
+            newIndex -= arraySize;
+        if (newIndex === 0) {
             numberoOfTimesZeroWasHit++;
+            console.log("hit zero");
+            console.log({ newIndex: newIndex, numberoOfTimesZeroWasHit: numberoOfTimesZeroWasHit, direction: direction, amount: amount });
         }
     }
-    // console.log({dir: 'right', numberoOfTimesZeroWasHit, numberOfZeroHitsNonFullRotation });
-    var numberOfZeroHitsOnClick = numberoOfTimesZeroWasHit + numberOfZeroHitsNonFullRotation;
-    return { newIndex: newIndex, numberOfZeroHitsOnClick: numberOfZeroHitsOnClick };
+    return { newIndex: newIndex, numberoOfTimesZeroWasHit: numberoOfTimesZeroWasHit };
 };
 exports.Rotate = Rotate;
 var getAmountOfTimesZeroIsHit = function () {
@@ -67,14 +55,9 @@ var getAmountOfTimesZeroIsHit = function () {
         var _a = (0, exports.Rotate)({
             currentIndex: currentIndex,
             rotation: rotation,
-        }), newIndex = _a.newIndex, numberOfZeroHitsOnClick = _a.numberOfZeroHitsOnClick;
+        }), newIndex = _a.newIndex, numberoOfTimesZeroWasHit = _a.numberoOfTimesZeroWasHit;
         currentIndex = newIndex;
-        if (currentIndex === 0) {
-            //ends at zero
-            numberOfZeroes++;
-        }
-        // console.log({ numberOfZeroes, numberOfZeroHitsOnClick });
-        numberOfZeroes += numberOfZeroHitsOnClick;
+        numberOfZeroes += numberoOfTimesZeroWasHit;
     }
     return numberOfZeroes;
 };

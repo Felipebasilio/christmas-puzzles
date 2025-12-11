@@ -45,74 +45,41 @@ const lowerCondition = ({
 };
 
 export const Rotate = ({ currentIndex, rotation }: RotateProps) => {
-  const { direction, amount } = rotation;
-  let numberoOfTimesZeroWasHit = 0;
   let newIndex = currentIndex;
-  let numberOfZeroHitsNonFullRotation = 0;
-  
-  if (direction === Direction.LEFT) {
-    
-    // Hits zero but not a full rotation
-    if (lowerCondition({ currentIndex, amount, direction })) numberOfZeroHitsNonFullRotation++;
+  let { direction, amount } = rotation;
+  let numberoOfTimesZeroWasHit = 0;
 
-    newIndex = currentIndex - amount;
-    while (newIndex < 0) {
-      newIndex += arraySize;
+  for (let i = 0; i < amount; i++) {
+    if (direction === Direction.LEFT) newIndex--;
+    else newIndex++;
 
-      if (newIndex < 0) {
-        numberoOfTimesZeroWasHit++;
-      }
-    }
+    if (newIndex < 0) newIndex += arraySize;
 
-    // console.log({dir: 'left', numberoOfTimesZeroWasHit, numberOfZeroHitsNonFullRotation });
+    if (newIndex >= arraySize) newIndex -= arraySize;
 
-    const numberOfZeroHitsOnClick =
-      numberoOfTimesZeroWasHit + numberOfZeroHitsNonFullRotation;
-
-    return { newIndex, numberOfZeroHitsOnClick };
-  }
-
-  if (upperCondition({ currentIndex, amount, direction })) numberOfZeroHitsNonFullRotation++;
-
-  newIndex = currentIndex + amount;
-  while (newIndex >= arraySize) {
-    newIndex -= arraySize;
-
-    if (newIndex >= arraySize) {
+    if (newIndex === 0) {
       numberoOfTimesZeroWasHit++;
+      console.log("hit zero");
+      console.log({ newIndex, numberoOfTimesZeroWasHit, direction, amount });
     }
   }
 
-  // console.log({dir: 'right', numberoOfTimesZeroWasHit, numberOfZeroHitsNonFullRotation });
-
-  const numberOfZeroHitsOnClick =
-    numberoOfTimesZeroWasHit + numberOfZeroHitsNonFullRotation;
-
-  return { newIndex, numberOfZeroHitsOnClick };
+  return { newIndex, numberoOfTimesZeroWasHit };
 };
 
 export const getAmountOfTimesZeroIsHit = () => {
   const initialValue = 50;
   const rotations = readInputFile();
-  let numberOfZeroes = 0;
 
+  let numberOfZeroes = 0;
   let currentIndex = initialValue;
   for (const rotation of rotations) {
-    const { newIndex, numberOfZeroHitsOnClick } = Rotate({
+    const { newIndex, numberoOfTimesZeroWasHit } = Rotate({
       currentIndex,
       rotation,
     });
-
     currentIndex = newIndex;
-
-    if (currentIndex === 0) {
-      //ends at zero
-      numberOfZeroes++;
-    }
-
-    // console.log({ numberOfZeroes, numberOfZeroHitsOnClick });
-
-    numberOfZeroes += numberOfZeroHitsOnClick;
+    numberOfZeroes += numberoOfTimesZeroWasHit;
   }
   return numberOfZeroes;
 };
