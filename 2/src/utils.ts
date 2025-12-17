@@ -53,9 +53,9 @@ export const getIdsList = (): number[] => {
           break;
         }
       }
-          
+
       startIdNumber++;
-    }
+    } 
   }
 
   return duplicates;
