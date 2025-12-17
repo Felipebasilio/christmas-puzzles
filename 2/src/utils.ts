@@ -32,7 +32,7 @@ const checkHasDuplicate = (id: string): boolean => {
 
   if (partOne === partTwo) {
     return true;
-  } else {
-    return checkHasDuplicate(partOne) && checkHasDuplicate(partTwo);
-  }
+  } 
+  
+  return false
 };
