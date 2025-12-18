@@ -1,10 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
 
-export const readInputFile = (): string[] => {
+export const readInputFile = (): [bigint[][], bigint[]] => {
   const rootDir = process.cwd();
-  const filePath = path.join(rootDir, "./data/test.txt");
-  // const filePath = path.join(rootDir, './data/input.txt');
+  // const filePath = path.join(rootDir, "./data/test.txt");
+  const filePath = path.join(rootDir, './data/input.txt');
   const input = fs.readFileSync(filePath, "utf8");
 
   let [freshIdsLists, availableIds] = input.split(" ");
@@ -22,5 +22,5 @@ export const readInputFile = (): string[] => {
 
   availableIdsFormatted?.shift();
 
-  return [];
+  return [freshIdsListsFormatted ?? [], availableIdsFormatted ?? []];
 };
