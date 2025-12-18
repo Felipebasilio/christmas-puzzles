@@ -7,9 +7,20 @@ export const readInputFile = (): string[] => {
   // const filePath = path.join(rootDir, './data/input.txt');
   const input = fs.readFileSync(filePath, "utf8");
 
-  const [freshIdsLists, availableIds] = input.split(" ");
-  console.log("freshIdsLists: ", freshIdsLists);
-  console.log("availableIds: ", availableIds);
+  let [freshIdsLists, availableIds] = input.split(" ");
 
-  return []
+  const freshIdsListsFormatted = freshIdsLists
+    ?.split("\n")
+    .map((item) => item.split("-"))
+    .map((item) => item.map((item) => BigInt(item)))
+
+  freshIdsListsFormatted?.pop();
+
+  const availableIdsFormatted = availableIds
+    ?.split("\n")
+    .map((item) => BigInt(item));
+
+  availableIdsFormatted?.shift();
+
+  return [];
 };
