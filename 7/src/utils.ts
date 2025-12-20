@@ -1,90 +1,77 @@
 import { readInputFile } from "./read-file";
 
-export const getAmountOfFreshIngredients = (): number => {
-  const { rows, operationsRow } = readInputFile();
+export const getBeamSplitCount = (): number => {
+  const { grid } = readInputFile();
   
-  const maxWidth = Math.max(...rows.map(row => row.length), operationsRow.length);
+  let startRow = -1;
+  let startCol = -1;
   
-  const paddedRows = rows.map(row => row.padEnd(maxWidth, ' '));
-  const paddedOperationsRow = operationsRow.padEnd(maxWidth, ' ');
-  
-  let totalSum = 0;
-  
-  const isSeparatorColumn = (col: number): boolean => {
-    for (const row of paddedRows) {
-      if (row[col] && row[col] !== ' ') {
-        return false;
-      }
-    }
-    const opChar = paddedOperationsRow[col]?.trim();
-    if (opChar && opChar !== '') {
-      return false;
-    }
-    return true;
-  };
-  
-  let col = maxWidth - 1;
-  
-  while (col >= 0) {
-    if (isSeparatorColumn(col)) {
-      col--;
-      continue;
-    }
-    
-    let operationCol = col;
-    let operation = '';
-    
-    for (let c = col; c >= 0; c--) {
-      if (isSeparatorColumn(c)) {
-        break;
-      }
-      const opChar = paddedOperationsRow[c]?.trim();
-      if (opChar === '+' || opChar === '*') {
-        operation = opChar;
-        operationCol = c;
-        break;
-      }
-    }
-    
-    if (operation === '+' || operation === '*') {
-      let problemEnd = col;
-      let problemStart = operationCol;
-      
-      while (problemStart > 0 && !isSeparatorColumn(problemStart - 1)) {
-        problemStart--;
-      }
-      
-      const numbers: number[] = [];
-      
-      for (let numCol = problemEnd; numCol >= problemStart; numCol--) {
-        let numberStr = '';
-        for (const row of paddedRows) {
-          const char = row[numCol];
-          if (char && char !== ' ') {
-            numberStr += char;
-          }
-        }
-        
-        if (numberStr.length > 0) {
-          numbers.push(parseInt(numberStr, 10));
-        }
-      }
-      
-      if (numbers.length > 0) {
-        let result: number;
-        if (operation === '+') {
-          result = numbers.reduce((acc, curr) => acc + curr, 0);
-        } else {
-          result = numbers.reduce((acc, curr) => acc * curr, 1);
-        }
-        totalSum += result;
-      }
-      
-      col = problemStart - 1;
-    } else {
-      col--;
+  for (let row = 0; row < grid.length; row++) {
+    const col = grid[row]?.indexOf('S') ?? -1;
+    if (col !== -1) {
+      startRow = row;
+      startCol = col;
+      break;
     }
   }
   
-  return totalSum;
+  if (startRow === -1 || startCol === -1) {
+    throw new Error("Starting position S not found");
+  }
+  
+  let splitCount = 0;
+  
+  const beamQueue: Array<{ row: number; col: number }> = [{ row: startRow, col: startCol }];
+  const processedBeams = new Set<string>();
+  const hitSplitters = new Set<string>();
+  
+  while (beamQueue.length > 0) {
+    const beam = beamQueue.shift()!;
+    const beamKey = `${beam.row},${beam.col}`;
+    
+    if (processedBeams.has(beamKey)) {
+      continue;
+    }
+    processedBeams.add(beamKey);
+    
+    let currentRow = beam.row;
+    let currentCol = beam.col;
+    
+    currentRow++;
+    
+    while (currentRow < grid.length) {
+      const cell = grid[currentRow]?.[currentCol];
+      
+      if (cell === '^') {
+        const splitterKey = `${currentRow},${currentCol}`;
+        
+        if (!hitSplitters.has(splitterKey)) {
+          splitCount++;
+          hitSplitters.add(splitterKey);
+        }
+        
+        if (currentCol > 0) {
+          const leftBeamKey = `${currentRow},${currentCol - 1}`;
+          if (!processedBeams.has(leftBeamKey)) {
+            beamQueue.push({ row: currentRow, col: currentCol - 1 });
+          }
+        }
+        
+        if (currentCol < (grid[currentRow]?.length ?? 0) - 1) {
+          const rightBeamKey = `${currentRow},${currentCol + 1}`;
+          if (!processedBeams.has(rightBeamKey)) {
+            beamQueue.push({ row: currentRow, col: currentCol + 1 });
+          }
+        }
+        
+        break;
+      } else if (cell === '.' || cell === undefined || cell === ' ') {
+        currentRow++;
+      } else {
+        break;
+      }
+    }
+  }
+  
+  return splitCount;
 };

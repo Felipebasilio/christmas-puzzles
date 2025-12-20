@@ -1,7 +1,7 @@
-import { getAmountOfFreshIngredients } from "./src/utils";
+import { getBeamSplitCount } from "./src/utils";
 
-const partOne = getAmountOfFreshIngredients();
-// const partTwo = getAmountOfFreshIngredients();
+const partOne = getBeamSplitCount();
+// const partTwo = getBeamSplitCount();
 
 console.log("Part One:", partOne);
 // console.log("Part Two:", partTwo);

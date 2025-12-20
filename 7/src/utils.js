@@ -1,92 +1,67 @@
 "use strict";
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getBeamSplitCount = void 0;
+var read_file_1 = require("./read-file");
+var getBeamSplitCount = function () {
+    var _a, _b, _c, _d, _e;
+    var grid = (0, read_file_1.readInputFile)().grid;
+    var startRow = -1;
+    var startCol = -1;
+    for (var row = 0; row < grid.length; row++) {
+        var col = (_b = (_a = grid[row]) === null || _a === void 0 ? void 0 : _a.indexOf('S')) !== null && _b !== void 0 ? _b : -1;
+        if (col !== -1) {
+            startRow = row;
+            startCol = col;
+            break;
         }
     }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAmountOfFreshIngredients = void 0;
-var read_file_1 = require("./read-file");
-var getAmountOfFreshIngredients = function () {
-    var _a;
-    var _b = (0, read_file_1.readInputFile)(), rows = _b.rows, operationsRow = _b.operationsRow;
-    var maxWidth = Math.max.apply(Math, __spreadArray(__spreadArray([], rows.map(function (row) { return row.length; }), false), [operationsRow.length], false));
-    var paddedRows = rows.map(function (row) { return row.padEnd(maxWidth, ' '); });
-    var paddedOperationsRow = operationsRow.padEnd(maxWidth, ' ');
-    var totalSum = 0;
-    var isSeparatorColumn = function (col) {
-        var _a;
-        for (var _i = 0, paddedRows_2 = paddedRows; _i < paddedRows_2.length; _i++) {
-            var row = paddedRows_2[_i];
-            if (row[col] && row[col] !== ' ') {
-                return false;
-            }
-        }
-        var opChar = (_a = paddedOperationsRow[col]) === null || _a === void 0 ? void 0 : _a.trim();
-        if (opChar && opChar !== '') {
-            return false;
-        }
-        return true;
-    };
-    var col = maxWidth - 1;
-    while (col >= 0) {
-        if (isSeparatorColumn(col)) {
-            col--;
+    if (startRow === -1 || startCol === -1) {
+        throw new Error("Starting position S not found");
+    }
+    var splitCount = 0;
+    var beamQueue = [{ row: startRow, col: startCol }];
+    var processedBeams = new Set();
+    var hitSplitters = new Set();
+    while (beamQueue.length > 0) {
+        var beam = beamQueue.shift();
+        var beamKey = "".concat(beam.row, ",").concat(beam.col);
+        if (processedBeams.has(beamKey)) {
             continue;
         }
-        var operationCol = col;
-        var operation = '';
-        for (var c = col; c >= 0; c--) {
-            if (isSeparatorColumn(c)) {
-                break;
-            }
-            var opChar = (_a = paddedOperationsRow[c]) === null || _a === void 0 ? void 0 : _a.trim();
-            if (opChar === '+' || opChar === '*') {
-                operation = opChar;
-                operationCol = c;
-                break;
-            }
-        }
-        if (operation === '+' || operation === '*') {
-            var problemEnd = col;
-            var problemStart = operationCol;
-            while (problemStart > 0 && !isSeparatorColumn(problemStart - 1)) {
-                problemStart--;
-            }
-            var numbers = [];
-            for (var numCol = problemEnd; numCol >= problemStart; numCol--) {
-                var numberStr = '';
-                for (var _i = 0, paddedRows_1 = paddedRows; _i < paddedRows_1.length; _i++) {
-                    var row = paddedRows_1[_i];
-                    var char = row[numCol];
-                    if (char && char !== ' ') {
-                        numberStr += char;
+        processedBeams.add(beamKey);
+        var currentRow = beam.row;
+        var currentCol = beam.col;
+        currentRow++;
+        while (currentRow < grid.length) {
+            var cell = (_c = grid[currentRow]) === null || _c === void 0 ? void 0 : _c[currentCol];
+            if (cell === '^') {
+                var splitterKey = "".concat(currentRow, ",").concat(currentCol);
+                if (!hitSplitters.has(splitterKey)) {
+                    splitCount++;
+                    hitSplitters.add(splitterKey);
+                }
+                if (currentCol > 0) {
+                    var leftBeamKey = "".concat(currentRow, ",").concat(currentCol - 1);
+                    if (!processedBeams.has(leftBeamKey)) {
+                        beamQueue.push({ row: currentRow, col: currentCol - 1 });
                     }
                 }
-                if (numberStr.length > 0) {
-                    numbers.push(parseInt(numberStr, 10));
+                if (currentCol < ((_e = (_d = grid[currentRow]) === null || _d === void 0 ? void 0 : _d.length) !== null && _e !== void 0 ? _e : 0) - 1) {
+                    var rightBeamKey = "".concat(currentRow, ",").concat(currentCol + 1);
+                    if (!processedBeams.has(rightBeamKey)) {
+                        beamQueue.push({ row: currentRow, col: currentCol + 1 });
+                    }
                 }
+                break;
             }
-            if (numbers.length > 0) {
-                var result = void 0;
-                if (operation === '+') {
-                    result = numbers.reduce(function (acc, curr) { return acc + curr; }, 0);
-                }
-                else {
-                    result = numbers.reduce(function (acc, curr) { return acc * curr; }, 1);
-                }
-                totalSum += result;
+            else if (cell === '.' || cell === undefined || cell === ' ') {
+                currentRow++;
             }
-            col = problemStart - 1;
-        }
-        else {
-            col--;
+            else {
+                break;
+            }
         }
     }
-    return totalSum;
+    return splitCount;
 };
-exports.getAmountOfFreshIngredients = getAmountOfFreshIngredients;
+exports.getBeamSplitCount = getBeamSplitCount;
