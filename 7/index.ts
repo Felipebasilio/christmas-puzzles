@@ -1,7 +1,7 @@
-import { getBeamSplitCount } from "./src/utils";
+import { getBeamSplitCount, getTimelineCount } from "./src/utils";
 
 const partOne = getBeamSplitCount();
-// const partTwo = getBeamSplitCount();
+const partTwo = getTimelineCount();
 
 console.log("Part One:", partOne);
-// console.log("Part Two:", partTwo);
+console.log("Part Two:", partTwo);

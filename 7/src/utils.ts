@@ -75,3 +75,83 @@ export const getBeamSplitCount = (): number => {
   
   return splitCount;
 };
+
+export const getTimelineCount = (): number => {
+  const { grid } = readInputFile();
+  
+  let startRow = -1;
+  let startCol = -1;
+  
+  for (let row = 0; row < grid.length; row++) {
+    const col = grid[row]?.indexOf('S') ?? -1;
+    if (col !== -1) {
+      startRow = row;
+      startCol = col;
+      break;
+    }
+  }
+  
+  if (startRow === -1 || startCol === -1) {
+    throw new Error("Starting position S not found");
+  }
+  
+  const memo = new Map<string, number>();
+  
+  const countPaths = (row: number, col: number): number => {
+    const key = `${row},${col}`;
+    
+    if (memo.has(key)) {
+      return memo.get(key)!;
+    }
+    
+    const startCell = grid[row]?.[col];
+    if (startCell === '^') {
+      let pathCount = 0;
+      
+      if (col > 0) {
+        pathCount += countPaths(row, col - 1);
+      }
+      
+      if (col < (grid[row]?.length ?? 0) - 1) {
+        pathCount += countPaths(row, col + 1);
+      }
+      
+      memo.set(key, pathCount);
+      return pathCount;
+    }
+    
+    let currentRow = row;
+    let currentCol = col;
+    
+    currentRow++;
+    
+    while (currentRow < grid.length) {
+      const cell = grid[currentRow]?.[currentCol];
+      
+      if (cell === '^') {
+        let pathCount = 0;
+        
+        if (currentCol > 0) {
+          pathCount += countPaths(currentRow, currentCol - 1);
+        }
+        
+        if (currentCol < (grid[currentRow]?.length ?? 0) - 1) {
+          pathCount += countPaths(currentRow, currentCol + 1);
+        }
+        
+        memo.set(key, pathCount);
+        return pathCount;
+      } else if (cell === '.' || cell === undefined || cell === ' ') {
+        currentRow++;
+      } else {
+        memo.set(key, 0);
+        return 0;
+      }
+    }
+    
+    memo.set(key, 1);
+    return 1;
+  };
+  
+  return countPaths(startRow, startCol);
+};
