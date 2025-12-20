@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.partOneTest = exports.partOne = exports.getCircuitProduct = void 0;
+exports.partTwo = exports.partOneTest = exports.partOne = exports.getCircuitProduct = void 0;
 var read_file_1 = require("./read-file");
 var calculateDistance = function (a, b) {
     var dx = a.x - b.x;
@@ -91,3 +91,37 @@ var partOneTest = function () {
     return (0, exports.getCircuitProduct)(10);
 };
 exports.partOneTest = partOneTest;
+var partTwo = function () {
+    var junctionBoxes = (0, read_file_1.readInputFile)().junctionBoxes;
+    var n = junctionBoxes.length;
+    var pairs = [];
+    for (var i = 0; i < n; i++) {
+        for (var j = i + 1; j < n; j++) {
+            pairs.push({
+                boxA: i,
+                boxB: j,
+                distance: calculateDistance(junctionBoxes[i], junctionBoxes[j]),
+            });
+        }
+    }
+    pairs.sort(function (a, b) { return a.distance - b.distance; });
+    var uf = new UnionFind(n);
+    var lastBoxA = -1;
+    var lastBoxB = -1;
+    for (var _i = 0, pairs_2 = pairs; _i < pairs_2.length; _i++) {
+        var pair = pairs_2[_i];
+        var merged = uf.union(pair.boxA, pair.boxB);
+        if (merged) {
+            lastBoxA = pair.boxA;
+            lastBoxB = pair.boxB;
+            var circuitSizes = uf.getCircuitSizes();
+            if (circuitSizes.length === 1) {
+                break;
+            }
+        }
+    }
+    var boxA = junctionBoxes[lastBoxA];
+    var boxB = junctionBoxes[lastBoxB];
+    return boxA.x * boxB.x;
+};
+exports.partTwo = partTwo;

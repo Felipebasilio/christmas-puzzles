@@ -108,3 +108,45 @@ export const partOne = (): number => {
 export const partOneTest = (): number => {
   return getCircuitProduct(10);
 };
+
+export const partTwo = (): number => {
+  const { junctionBoxes } = readInputFile();
+  const n = junctionBoxes.length;
+
+  const pairs: JunctionPair[] = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      pairs.push({
+        boxA: i,
+        boxB: j,
+        distance: calculateDistance(junctionBoxes[i]!, junctionBoxes[j]!),
+      });
+    }
+  }
+
+  pairs.sort((a, b) => a.distance - b.distance);
+
+  const uf = new UnionFind(n);
+
+  let lastBoxA = -1;
+  let lastBoxB = -1;
+
+  for (const pair of pairs) {
+    const merged = uf.union(pair.boxA, pair.boxB);
+    
+    if (merged) {
+      lastBoxA = pair.boxA;
+      lastBoxB = pair.boxB;
+      
+      const circuitSizes = uf.getCircuitSizes();
+      if (circuitSizes.length === 1) {
+        break;
+      }
+    }
+  }
+
+  const boxA = junctionBoxes[lastBoxA]!;
+  const boxB = junctionBoxes[lastBoxB]!;
+  
+  return boxA.x * boxB.x;
+};

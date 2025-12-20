@@ -1,5 +1,7 @@
-import { partOne } from "./src/utils";
+import { partOne, partTwo } from "./src/utils";
 
-const result = partOne();
+const resultOne = partOne();
+const resultTwo = partTwo();
 
-console.log("Part One:", result);
+console.log("Part One:", resultOne);
+console.log("Part Two:", resultTwo);
