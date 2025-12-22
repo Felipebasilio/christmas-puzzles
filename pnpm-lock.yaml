@@ -11,6 +11,9 @@ importers:
       '@types/node':
         specifier: ^24.10.2
         version: 24.10.2
+      javascript-lp-solver:
+        specifier: ^0.4.24
+        version: 0.4.24
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -192,6 +195,9 @@ packages:
   get-tsconfig@4.13.0:
     resolution: {integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==}
 
+  javascript-lp-solver@0.4.24:
+    resolution: {integrity: sha512-5edoDKnMrt/u3M6GnZKDDIPxOyFOg+WrwDv8mjNiMC2DePhy2H9/FFQgf4ggywaXT1utvkxusJcjQUER72cZmA==}
+
   resolve-pkg-maps@1.0.0:
     resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
 
@@ -327,6 +333,8 @@ snapshots:
   get-tsconfig@4.13.0:
     dependencies:
       resolve-pkg-maps: 1.0.0
+
+  javascript-lp-solver@0.4.24: {}
 
   resolve-pkg-maps@1.0.0: {}
 

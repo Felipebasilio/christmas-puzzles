@@ -1,5 +1,7 @@
-import { partOne } from "./src/utils";
+import { partOne, partTwo } from "./src/utils";
 
-const result = partOne();
+const resultPartOne = partOne();
+console.log("Part One (Indicator Lights):", resultPartOne);
 
-console.log("Part One:", result);
+const resultPartTwo = partTwo();
+console.log("Part Two (Joltage Counters):", resultPartTwo);
