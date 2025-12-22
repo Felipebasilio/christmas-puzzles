@@ -3,6 +3,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.partTwo = exports.partOne = void 0;
 var read_file_1 = require("./read-file");
 var solver = require("javascript-lp-solver");
+/**
+ * Finds the minimum number of button presses needed to configure indicator lights.
+ *
+ * KEY INSIGHT: Pressing a button toggles lights (ON↔OFF), which is XOR.
+ * Pressing the same button twice cancels out, so each button is pressed 0 or 1 times.
+ * With n buttons, there are exactly 2^n combinations to try.
+ *
+ * ALGORITHM: Brute-force all 2^n combinations using bitmasks.
+ *
+ * @param machine - The machine to solve
+ * @returns The minimum number of button presses required
+ */
 var findMinPressesForIndicatorLights = function (machine) {
     var target = machine.target, buttons = machine.buttons;
     var numButtons = buttons.length;
@@ -29,6 +41,9 @@ var findMinPressesForIndicatorLights = function (machine) {
     }
     return minimumPresses === Infinity ? 0 : minimumPresses;
 };
+/**
+ * Solves Part One: Sum of minimum presses for all machines' indicator lights.
+ */
 var partOne = function () {
     var machines = (0, read_file_1.readInputFile)().machines;
     var totalPresses = 0;
@@ -40,6 +55,59 @@ var partOne = function () {
     return totalPresses;
 };
 exports.partOne = partOne;
+/**
+ * Part Two is fundamentally different from Part One:
+ *
+ * Part One: Buttons TOGGLE lights (XOR). Press twice = cancel out. Each button: 0 or 1 times.
+ * Part Two: Buttons INCREMENT counters (+1). No cancellation. Each button: 0, 1, 2, 3, ... times.
+ *
+ * This is an Integer Linear Programming (ILP) problem:
+ *
+ * OBJECTIVE: Minimize total button presses
+ *   minimize: x₀ + x₁ + x₂ + ... (where xᵢ = times button i is pressed)
+ *
+ * CONSTRAINTS: Each counter must reach its target value
+ *   Counter 0: (sum of xᵢ for all buttons affecting counter 0) = target[0]
+ *   Counter 1: (sum of xᵢ for all buttons affecting counter 1) = target[1]
+ *   etc.
+ *
+ * EXAMPLE:
+ *   Machine: (0,2) (0,1) with targets {3, 5, 4, 7}
+ *
+ *   Buttons:
+ *     x₀ = times we press button (0,2) - affects counters 0 and 2
+ *     x₁ = times we press button (0,1) - affects counters 0 and 1
+ *
+ *   Constraints:
+ *     Counter 0: x₀ + x₁ = 3       (both buttons affect counter 0)
+ *     Counter 1: x₁ = 5             (only button 1 affects counter 1)
+ *     Counter 2: x₀ = 4             (only button 0 affects counter 2)
+ *     Counter 3: 0 = 7              (no buttons affect counter 3 - impossible!)
+ */
+/**
+ * Builds the Linear Programming model for a single machine.
+ *
+ * The model is a JavaScript object that the LP solver understands:
+ * {
+ *   optimize: "total_presses",  // What we want to minimize
+ *   opType: "min",              // Minimize (not maximize)
+ *   constraints: {
+ *     counter0: { equal: 3 },   // Counter 0 must equal 3
+ *     counter1: { equal: 5 },   // Counter 1 must equal 5
+ *     ...
+ *   },
+ *   variables: {
+ *     button0: { total_presses: 1, counter0: 1, counter2: 1 },  // Button 0 affects counters 0 and 2
+ *     button1: { total_presses: 1, counter0: 1, counter1: 1 },  // Button 1 affects counters 0 and 1
+ *     ...
+ *   },
+ *   ints: {
+ *     button0: 1,  // Button 0 presses must be an integer
+ *     button1: 1,  // Button 1 presses must be an integer
+ *     ...
+ *   }
+ * }
+ */
 var buildLinearProgrammingModel = function (buttons, joltageTargets) {
     var model = {
         optimize: "total_presses",
@@ -63,6 +131,13 @@ var buildLinearProgrammingModel = function (buttons, joltageTargets) {
     });
     return model;
 };
+/**
+ * Finds the minimum number of button presses needed for joltage configuration.
+ * Uses Integer Linear Programming to solve the optimization problem.
+ *
+ * @param machine - The machine to solve
+ * @returns The minimum number of button presses, or 0 if no solution exists
+ */
 var findMinPressesForJoltageCounters = function (machine) {
     var buttons = machine.buttons, joltageTargets = machine.joltageTargets;
     if (joltageTargets.length === 0) {
@@ -76,6 +151,9 @@ var findMinPressesForJoltageCounters = function (machine) {
     }
     return Math.round(solution.result);
 };
+/**
+ * Solves Part Two: Sum of minimum presses for all machines' joltage counters.
+ */
 var partTwo = function () {
     var machines = (0, read_file_1.readInputFile)().machines;
     var totalPresses = 0;

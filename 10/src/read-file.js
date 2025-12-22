@@ -36,19 +36,47 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.readInputFile = void 0;
 var fs = __importStar(require("fs"));
 var path = __importStar(require("path"));
+/**
+ * Converts a string like ".##." into an array of booleans.
+ * '.' means OFF (false), '#' means ON (true).
+ *
+ * Example: ".##." → [false, true, true, false]
+ */
 var parseIndicatorLightPattern = function (patternString) {
-    return patternString.split('').map(function (character) {         return character === '#'; });
+    return patternString.split('').map(function (character) { return character === '#'; });
 };
+/**
+ * Converts a comma-separated string of numbers into an array of integers.
+ * These represent which lights/counters a button affects.
+ *
+ * Example: "0,2,3" → [0, 2, 3]
+ * Example: "" → []
+ */
 var parseButtonAffectedIndices = function (buttonString) {
     if (buttonString.trim() === '')
         return [];
-        return buttonString.split(',').map(function (s) { return parseInt(s.trim(), 10); });
+    return buttonString.split(',').map(function (s) { return parseInt(s.trim(), 10); });
 };
+/**
+ * Converts a comma-separated string of joltage requirements into an array.
+ *
+ * Example: "3,5,4,7" → [3, 5, 4, 7]
+ */
 var parseJoltageRequirements = function (joltageString) {
     if (!joltageString || joltageString.trim() === '')
         return [];
-        return joltageString.split(',').map(function (s) { return parseInt(s.trim(), 10); });
+    return joltageString.split(',').map(function (s) { return parseInt(s.trim(), 10); });
 };
+/**
+ * Reads and parses the input file containing machine configurations.
+ *
+ * Each line has the format:
+ *   [.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}
+ *
+ *   - [.##.] = Indicator light pattern (Part 1)
+ *   - (3), (1,3), etc. = Button wiring schematics
+ *   - {3,5,4,7} = Joltage requirements (Part 2)
+ */
 var readInputFile = function () {
     var rootDir = process.cwd();
     var filePath = path.join(rootDir, "./data/input.txt");

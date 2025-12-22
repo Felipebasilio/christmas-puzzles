@@ -1,167 +1,99 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.partTwo = exports.partOne = void 0;
+exports.partOne = void 0;
 var read_file_1 = require("./read-file");
-var solver = require("javascript-lp-solver");
-/**
- * Finds the minimum number of button presses needed to configure indicator lights.
- *
- * KEY INSIGHT: Pressing a button toggles lights (ON↔OFF), which is XOR.
- * Pressing the same button twice cancels out, so each button is pressed 0 or 1 times.
- * With n buttons, there are exactly 2^n combinations to try.
- *
- * ALGORITHM: Brute-force all 2^n combinations using bitmasks.
- *
- * @param machine - The machine to solve
- * @returns The minimum number of button presses required
- */
-var findMinPressesForIndicatorLights = function (machine) {
-    var target = machine.target, buttons = machine.buttons;
-    var numButtons = buttons.length;
-    var targetBitmask = target.reduce(function (accumulator, isLightOn, lightIndex) {
-        return isLightOn ? accumulator | (1 << lightIndex) : accumulator;
-    }, 0);
-    var minimumPresses = Infinity;
-    for (var buttonCombination = 0; buttonCombination < (1 << numButtons); buttonCombination++) {
-        var currentLightState = 0;
-        var pressCount = 0;
-        for (var buttonIndex = 0; buttonIndex < numButtons; buttonIndex++) {
-            var isButtonPressed = (buttonCombination & (1 << buttonIndex)) !== 0;
-            if (isButtonPressed) {
-                pressCount++;
-                for (var _i = 0, _a = buttons[buttonIndex]; _i < _a.length; _i++) {
-                    var lightIndex = _a[_i];
-                    currentLightState ^= (1 << lightIndex);
-                }
+var canPlaceShape = function (grid, width, height, points, ox, oy) {
+    for (var _i = 0, points_1 = points; _i < points_1.length; _i++) {
+        var p = points_1[_i];
+        var nx = ox + p.x;
+        var ny = oy + p.y;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
+            return false;
+        }
+        if (grid[ny][nx]) {
+            return false;
+        }
+    }
+    return true;
+};
+var toggleShape = function (grid, points, ox, oy, value) {
+    for (var _i = 0, points_2 = points; _i < points_2.length; _i++) {
+        var p = points_2[_i];
+        grid[oy + p.y][ox + p.x] = value;
+    }
+};
+var findFirstEmptyCell = function (grid, width, height) {
+    for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+            if (!grid[y][x]) {
+                return { x: x, y: y };
             }
         }
-        if (currentLightState === targetBitmask) {
-            minimumPresses = Math.min(minimumPresses, pressCount);
+    }
+    return null;
+};
+var backtrack = function (grid, width, height, shapes, remainingShapeIndices, shapeIdx) {
+    if (shapeIdx >= remainingShapeIndices.length) {
+        return true;
+    }
+    var emptyCell = findFirstEmptyCell(grid, width, height);
+    if (!emptyCell) {
+        return false;
+    }
+    var emptyX = emptyCell.x, emptyY = emptyCell.y;
+    var currentShapeIndex = remainingShapeIndices[shapeIdx];
+    var shapeSymmetries = shapes[currentShapeIndex];
+    for (var _i = 0, shapeSymmetries_1 = shapeSymmetries; _i < shapeSymmetries_1.length; _i++) {
+        var symmetry = shapeSymmetries_1[_i];
+        for (var _a = 0, symmetry_1 = symmetry; _a < symmetry_1.length; _a++) {
+            var offset = symmetry_1[_a];
+            var startX = emptyX - offset.x;
+            var startY = emptyY - offset.y;
+            if (canPlaceShape(grid, width, height, symmetry, startX, startY)) {
+                toggleShape(grid, symmetry, startX, startY, true);
+                if (backtrack(grid, width, height, shapes, remainingShapeIndices, shapeIdx + 1)) {
+                    return true;
+                }
+                toggleShape(grid, symmetry, startX, startY, false);
+            }
         }
     }
-    return minimumPresses === Infinity ? 0 : minimumPresses;
+    grid[emptyY][emptyX] = true;
+    var result = backtrack(grid, width, height, shapes, remainingShapeIndices, shapeIdx);
+    grid[emptyY][emptyX] = false;
+    return result;
 };
-/**
- * Solves Part One: Sum of minimum presses for all machines' indicator lights.
- */
-var partOne = function () {
-    var machines = (0, read_file_1.readInputFile)().machines;
-    var totalPresses = 0;
-    for (var _i = 0, machines_1 = machines; _i < machines_1.length; _i++) {
-        var machine = machines_1[_i];
-        var minPresses = findMinPressesForIndicatorLights(machine);
-        totalPresses += minPresses;
+var canFitRegion = function (shapes, region) {
+    var width = region.width, height = region.height, shapeCounts = region.shapeCounts;
+    var requiredShapes = [];
+    shapeCounts.forEach(function (qty, shapeIdx) {
+        for (var i = 0; i < qty; i++) {
+            requiredShapes.push(shapeIdx);
+        }
+    });
+    var totalShapeArea = 0;
+    for (var _i = 0, requiredShapes_1 = requiredShapes; _i < requiredShapes_1.length; _i++) {
+        var shapeIdx = requiredShapes_1[_i];
+        totalShapeArea += shapes[shapeIdx][0].length;
     }
-    return totalPresses;
+    if (totalShapeArea > width * height) {
+        return false;
+    }
+    var grid = Array.from({ length: height }, function () { return new Array(width).fill(false); });
+    return backtrack(grid, width, height, shapes, requiredShapes, 0);
+};
+var partOne = function () {
+    var _a = (0, read_file_1.readInputFile)(), shapes = _a.shapes, regions = _a.regions;
+    var validCount = 0;
+    for (var i = 0; i < regions.length; i++) {
+        var region = regions[i];
+        if (canFitRegion(shapes, region)) {
+            validCount++;
+        }
+        if ((i + 1) % 100 === 0) {
+            console.log("Processed ".concat(i + 1, "/").concat(regions.length, " regions..."));
+        }
+    }
+    return validCount;
 };
 exports.partOne = partOne;
-/**
- * Part Two is fundamentally different from Part One:
- *
- * Part One: Buttons TOGGLE lights (XOR). Press twice = cancel out. Each button: 0 or 1 times.
- * Part Two: Buttons INCREMENT counters (+1). No cancellation. Each button: 0, 1, 2, 3, ... times.
- *
- * This is an Integer Linear Programming (ILP) problem:
- *
- * OBJECTIVE: Minimize total button presses
- *   minimize: x₀ + x₁ + x₂ + ... (where xᵢ = times button i is pressed)
- *
- * CONSTRAINTS: Each counter must reach its target value
- *   Counter 0: (sum of xᵢ for all buttons affecting counter 0) = target[0]
- *   Counter 1: (sum of xᵢ for all buttons affecting counter 1) = target[1]
- *   etc.
- *
- * EXAMPLE:
- *   Machine: (0,2) (0,1) with targets {3, 5, 4, 7}
- *
- *   Buttons:
- *     x₀ = times we press button (0,2) - affects counters 0 and 2
- *     x₁ = times we press button (0,1) - affects counters 0 and 1
- *
- *   Constraints:
- *     Counter 0: x₀ + x₁ = 3       (both buttons affect counter 0)
- *     Counter 1: x₁ = 5             (only button 1 affects counter 1)
- *     Counter 2: x₀ = 4             (only button 0 affects counter 2)
- *     Counter 3: 0 = 7              (no buttons affect counter 3 - impossible!)
- */
-/**
- * Builds the Linear Programming model for a single machine.
- *
- * The model is a JavaScript object that the LP solver understands:
- * {
- *   optimize: "total_presses",  // What we want to minimize
- *   opType: "min",              // Minimize (not maximize)
- *   constraints: {
- *     counter0: { equal: 3 },   // Counter 0 must equal 3
- *     counter1: { equal: 5 },   // Counter 1 must equal 5
- *     ...
- *   },
- *   variables: {
- *     button0: { total_presses: 1, counter0: 1, counter2: 1 },  // Button 0 affects counters 0 and 2
- *     button1: { total_presses: 1, counter0: 1, counter1: 1 },  // Button 1 affects counters 0 and 1
- *     ...
- *   },
- *   ints: {
- *     button0: 1,  // Button 0 presses must be an integer
- *     button1: 1,  // Button 1 presses must be an integer
- *     ...
- *   }
- * }
- */
-var buildLinearProgrammingModel = function (buttons, joltageTargets) {
-    var model = {
-        optimize: "total_presses",
-        opType: "min",
-        constraints: {},
-        variables: {},
-        ints: {}
-    };
-    joltageTargets.forEach(function (targetValue, counterIndex) {
-        var constraintName = "counter".concat(counterIndex);
-        model.constraints[constraintName] = { equal: targetValue };
-    });
-    buttons.forEach(function (affectedCounterIndices, buttonIndex) {
-        var variableName = "button".concat(buttonIndex);
-        model.variables[variableName] = { total_presses: 1 };
-        model.ints[variableName] = 1;
-        affectedCounterIndices.forEach(function (counterIndex) {
-            var constraintName = "counter".concat(counterIndex);
-            model.variables[variableName][constraintName] = 1;
-        });
-    });
-    return model;
-};
-/**
- * Finds the minimum number of button presses needed for joltage configuration.
- * Uses Integer Linear Programming to solve the optimization problem.
- *
- * @param machine - The machine to solve
- * @returns The minimum number of button presses, or 0 if no solution exists
- */
-var findMinPressesForJoltageCounters = function (machine) {
-    var buttons = machine.buttons, joltageTargets = machine.joltageTargets;
-    if (joltageTargets.length === 0) {
-        return 0;
-    }
-    var model = buildLinearProgrammingModel(buttons, joltageTargets);
-    var solution = solver.Solve(model);
-    if (!solution.feasible) {
-        console.warn("No feasible solution found for machine:", machine);
-        return 0;
-    }
-    return Math.round(solution.result);
-};
-/**
- * Solves Part Two: Sum of minimum presses for all machines' joltage counters.
- */
-var partTwo = function () {
-    var machines = (0, read_file_1.readInputFile)().machines;
-    var totalPresses = 0;
-    for (var _i = 0, machines_2 = machines; _i < machines_2.length; _i++) {
-        var machine = machines_2[_i];
-        var minPresses = findMinPressesForJoltageCounters(machine);
-        totalPresses += minPresses;
-    }
-    return totalPresses;
-};
-exports.partTwo = partTwo;

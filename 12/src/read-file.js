@@ -36,75 +36,80 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.readInputFile = void 0;
 var fs = __importStar(require("fs"));
 var path = __importStar(require("path"));
-/**
- * Converts a string like ".##." into an array of booleans.
- * '.' means OFF (false), '#' means ON (true).
- *
- * Example: ".##." → [false, true, true, false]
- */
-var parseIndicatorLightPattern = function (patternString) {
-    return patternString.split('').map(function (character) { return character === '#'; });
-};
-/**
- * Converts a comma-separated string of numbers into an array of integers.
- * These represent which lights/counters a button affects.
- *
- * Example: "0,2,3" → [0, 2, 3]
- * Example: "" → []
- */
-var parseButtonAffectedIndices = function (buttonString) {
-    if (buttonString.trim() === '')
+var normalizePoints = function (points) {
+    if (points.length === 0)
         return [];
-    return buttonString.split(',').map(function (s) { return parseInt(s.trim(), 10); });
+    var minX = Math.min.apply(Math, points.map(function (p) { return p.x; }));
+    var minY = Math.min.apply(Math, points.map(function (p) { return p.y; }));
+    return points
+        .map(function (p) { return ({ x: p.x - minX, y: p.y - minY }); })
+        .sort(function (a, b) { return a.y - b.y || a.x - b.x; });
 };
-/**
- * Converts a comma-separated string of joltage requirements into an array.
- *
- * Example: "3,5,4,7" → [3, 5, 4, 7]
- */
-var parseJoltageRequirements = function (joltageString) {
-    if (!joltageString || joltageString.trim() === '')
-        return [];
-    return joltageString.split(',').map(function (s) { return parseInt(s.trim(), 10); });
+var generateAllSymmetries = function (grid) {
+    var points = [];
+    grid.forEach(function (row, y) {
+        row.split('').forEach(function (char, x) {
+            if (char === '#') {
+                points.push({ x: x, y: y });
+            }
+        });
+    });
+    var uniqueSymmetries = new Set();
+    var results = [];
+    var current = points;
+    for (var flip = 0; flip < 2; flip++) {
+        for (var rotation = 0; rotation < 4; rotation++) {
+            var normalized = normalizePoints(current);
+            var key = JSON.stringify(normalized);
+            if (!uniqueSymmetries.has(key)) {
+                uniqueSymmetries.add(key);
+                results.push(normalized);
+            }
+            current = current.map(function (p) { return ({ x: -p.y, y: p.x }); });
+        }
+        current = current.map(function (p) { return ({ x: -p.x, y: p.y }); });
+    }
+    return results;
 };
-/**
- * Reads and parses the input file containing machine configurations.
- *
- * Each line has the format:
- *   [.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}
- *
- *   - [.##.] = Indicator light pattern (Part 1)
- *   - (3), (1,3), etc. = Button wiring schematics
- *   - {3,5,4,7} = Joltage requirements (Part 2)
- */
+var parseShapes = function (shapeLines) {
+    var shapes = [];
+    var currentGrid = [];
+    for (var _i = 0, shapeLines_1 = shapeLines; _i < shapeLines_1.length; _i++) {
+        var line = shapeLines_1[_i];
+        if (line.includes(':')) {
+            if (currentGrid.length > 0) {
+                shapes.push(generateAllSymmetries(currentGrid));
+            }
+            currentGrid = [];
+        }
+        else if (line.trim()) {
+            currentGrid.push(line.trim());
+        }
+    }
+    if (currentGrid.length > 0) {
+        shapes.push(generateAllSymmetries(currentGrid));
+    }
+    return shapes;
+};
+var parseRegions = function (regionLines) {
+    return regionLines.map(function (line) {
+        var _a = line.split(': '), sizePart = _a[0], countsPart = _a[1];
+        var _b = sizePart.split('x').map(Number), width = _b[0], height = _b[1];
+        var shapeCounts = countsPart.split(' ').map(Number);
+        return { width: width, height: height, shapeCounts: shapeCounts };
+    });
+};
 var readInputFile = function () {
     var rootDir = process.cwd();
     var filePath = path.join(rootDir, "./data/input.txt");
     var input = fs.readFileSync(filePath, "utf8");
-    var lines = input.split("\n").filter(function (line) { return line.trim() !== ""; });
-    var machines = lines.map(function (line) {
-        var indicatorMatch = line.match(/\[([.#]+)\]/);
-        if (!indicatorMatch)
-            throw new Error("Invalid line (no indicator pattern): ".concat(line));
-        var indicatorPatternString = indicatorMatch[1];
-        var target = parseIndicatorLightPattern(indicatorPatternString);
-        var numLights = target.length;
-        var joltageMatch = line.match(/\{([^}]+)\}/);
-        var joltageTargets = joltageMatch
-            ? parseJoltageRequirements(joltageMatch[1])
-            : [];
-        var afterIndicator = line.substring(line.indexOf(']') + 1);
-        var joltageStart = afterIndicator.indexOf('{');
-        var buttonsSection = joltageStart >= 0
-            ? afterIndicator.substring(0, joltageStart)
-            : afterIndicator;
-        var buttonMatches = buttonsSection.match(/\(([^)]*)\)/g) || [];
-        var buttons = buttonMatches.map(function (match) {
-            var content = match.slice(1, -1);
-            return parseButtonAffectedIndices(content);
-        });
-        return { numLights: numLights, target: target, buttons: buttons, joltageTargets: joltageTargets };
-    });
-    return { machines: machines };
+    var sections = input.trim().split('\n\n');
+    var lines = input.trim().split('\n');
+    var regionStartIndex = lines.findIndex(function (line) { return /^\d+x\d+:/.test(line); });
+    var shapeLines = lines.slice(0, regionStartIndex).filter(function (l) { return l.trim(); });
+    var regionLines = lines.slice(regionStartIndex).filter(function (l) { return l.trim(); });
+    var shapes = parseShapes(shapeLines);
+    var regions = parseRegions(regionLines);
+    return { shapes: shapes, regions: regions };
 };
 exports.readInputFile = readInputFile;

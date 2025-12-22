@@ -1,7 +1,7 @@
-import { partOne, partTwo } from "./src/utils";
+import { partOne } from "./src/utils";
 
-const resultPartOne = partOne();
-console.log("Part One (Indicator Lights):", resultPartOne);
+console.log("Day 12: Christmas Tree Farm");
+console.log("===========================");
 
-const resultPartTwo = partTwo();
-console.log("Part Two (Joltage Counters):", resultPartTwo);
+const result = partOne();
+console.log("\nPart One (Regions that can fit all presents):", result);

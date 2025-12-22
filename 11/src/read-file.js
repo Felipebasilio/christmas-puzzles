@@ -36,42 +36,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.readInputFile = void 0;
 var fs = __importStar(require("fs"));
 var path = __importStar(require("path"));
-/**
- * Parses a single line of input into a device and its outputs.
- *
- * Input format: "deviceName: output1 output2 output3"
- * Example: "you: bbb ccc" → { device: "you", outputs: ["bbb", "ccc"] }
- *
- * @param line - A single line from the input file
- * @returns The device name and its list of output connections
- */
 var parseDeviceLine = function (line) {
     var _a = line.split(":"), devicePart = _a[0], outputsPart = _a[1];
     var device = devicePart.trim();
     var outputs = outputsPart
         .trim()
-        .split(/\s+/) // Split by whitespace (one or more spaces)
-        .filter(function (output) { return output.length > 0; }); // Remove empty strings
+        .split(/\s+/)
+        .filter(function (output) { return output.length > 0; });
     return { device: device, outputs: outputs };
 };
-/**
- * Reads the input file and builds a directed graph of device connections.
- *
- * Each line in the input has the format:
- *   deviceName: output1 output2 output3
- *
- * This means "deviceName" has outputs leading to "output1", "output2", etc.
- * Data flows from a device through its outputs (one-way).
- *
- * @returns The device network as an adjacency list
- */
 var readInputFile = function () {
     var rootDir = process.cwd();
-    // const filePath = path.join(rootDir, "./data/test.txt");
     var filePath = path.join(rootDir, "./data/input.txt");
     var input = fs.readFileSync(filePath, "utf8");
     var lines = input.split("\n").filter(function (line) { return line.trim() !== ""; });
-    // Build the adjacency list
     var graph = new Map();
     for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
         var line = lines_1[_i];

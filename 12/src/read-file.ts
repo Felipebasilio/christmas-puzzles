@@ -1,105 +1,115 @@
 import * as fs from "fs";
 import * as path from "path";
 
-/**
- * Represents a single machine with its configuration data.
- * 
- * For Part 1 (Indicator Lights):
- *   - numLights: How many indicator lights the machine has
- *   - target: Which lights need to be ON (true) or OFF (false)
- *   - buttons: Each button is an array of light indices it toggles
- * 
- * For Part 2 (Joltage Counters):
- *   - joltageTargets: The target value for each joltage counter
- *   - buttons: Each button is an array of counter indices it increments by 1
- */
-export interface Machine {
-  numLights: number;
-  target: boolean[];
-  buttons: number[][];
-  joltageTargets: number[];
+export interface Point {
+  x: number;
+  y: number;
 }
 
-export interface IMachineData {
-  machines: Machine[];
+export type ShapeSymmetries = Point[][];
+
+export interface Region {
+  width: number;
+  height: number;
+  shapeCounts: number[];
 }
 
-/**
- * Converts a string like ".##." into an array of booleans.
- * '.' means OFF (false), '#' means ON (true).
- * 
- * Example: ".##." → [false, true, true, false]
- */
-const parseIndicatorLightPattern = (patternString: string): boolean[] => {
-  return patternString.split('').map(character => character === '#');
+export interface IPuzzleData {
+  shapes: ShapeSymmetries[];
+  regions: Region[];
+}
+
+const normalizePoints = (points: Point[]): Point[] => {
+  if (points.length === 0) return [];
+  
+  const minX = Math.min(...points.map(p => p.x));
+  const minY = Math.min(...points.map(p => p.y));
+  
+  return points
+    .map(p => ({ x: p.x - minX, y: p.y - minY }))
+    .sort((a, b) => a.y - b.y || a.x - b.x);
 };
 
-/**
- * Converts a comma-separated string of numbers into an array of integers.
- * These represent which lights/counters a button affects.
- * 
- * Example: "0,2,3" → [0, 2, 3]
- * Example: "" → []
- */
-const parseButtonAffectedIndices = (buttonString: string): number[] => {
-  if (buttonString.trim() === '') return [];
-  return buttonString.split(',').map(s => parseInt(s.trim(), 10));
+const generateAllSymmetries = (grid: string[]): ShapeSymmetries => {
+  const points: Point[] = [];
+  grid.forEach((row, y) => {
+    row.split('').forEach((char, x) => {
+      if (char === '#') {
+        points.push({ x, y });
+      }
+    });
+  });
+
+  const uniqueSymmetries = new Set<string>();
+  const results: Point[][] = [];
+
+  let current = points;
+
+  for (let flip = 0; flip < 2; flip++) {
+    for (let rotation = 0; rotation < 4; rotation++) {
+      const normalized = normalizePoints(current);
+      const key = JSON.stringify(normalized);
+      
+      if (!uniqueSymmetries.has(key)) {
+        uniqueSymmetries.add(key);
+        results.push(normalized);
+      }
+      
+      current = current.map(p => ({ x: -p.y, y: p.x }));
+    }
+    current = current.map(p => ({ x: -p.x, y: p.y }));
+  }
+
+  return results;
 };
 
-/**
- * Converts a comma-separated string of joltage requirements into an array.
- * 
- * Example: "3,5,4,7" → [3, 5, 4, 7]
- */
-const parseJoltageRequirements = (joltageString: string): number[] => {
-  if (!joltageString || joltageString.trim() === '') return [];
-  return joltageString.split(',').map(s => parseInt(s.trim(), 10));
+const parseShapes = (shapeLines: string[]): ShapeSymmetries[] => {
+  const shapes: ShapeSymmetries[] = [];
+  let currentGrid: string[] = [];
+
+  for (const line of shapeLines) {
+    if (line.includes(':')) {
+      if (currentGrid.length > 0) {
+        shapes.push(generateAllSymmetries(currentGrid));
+      }
+      currentGrid = [];
+    } else if (line.trim()) {
+      currentGrid.push(line.trim());
+    }
+  }
+  
+  if (currentGrid.length > 0) {
+    shapes.push(generateAllSymmetries(currentGrid));
+  }
+
+  return shapes;
 };
 
-/**
- * Reads and parses the input file containing machine configurations.
- * 
- * Each line has the format:
- *   [.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}
- *   
- *   - [.##.] = Indicator light pattern (Part 1)
- *   - (3), (1,3), etc. = Button wiring schematics
- *   - {3,5,4,7} = Joltage requirements (Part 2)
- */
-export const readInputFile = (): IMachineData => {
+const parseRegions = (regionLines: string[]): Region[] => {
+  return regionLines.map(line => {
+    const [sizePart, countsPart] = line.split(': ');
+    const [width, height] = sizePart.split('x').map(Number);
+    const shapeCounts = countsPart.split(' ').map(Number);
+    
+    return { width, height, shapeCounts };
+  });
+};
+
+export const readInputFile = (): IPuzzleData => {
   const rootDir = process.cwd();
   const filePath = path.join(rootDir, "./data/input.txt");
   const input = fs.readFileSync(filePath, "utf8");
 
-  const lines: string[] = input.split("\n").filter((line) => line.trim() !== "");
+  const sections = input.trim().split('\n\n');
+  
+  const lines = input.trim().split('\n');
+  let regionStartIndex = lines.findIndex(line => /^\d+x\d+:/.test(line));
+  
+  const shapeLines = lines.slice(0, regionStartIndex).filter(l => l.trim());
+  const regionLines = lines.slice(regionStartIndex).filter(l => l.trim());
 
-  const machines: Machine[] = lines.map((line) => {
-    const indicatorMatch = line.match(/\[([.#]+)\]/);
-    if (!indicatorMatch) throw new Error(`Invalid line (no indicator pattern): ${line}`);
-    
-    const indicatorPatternString = indicatorMatch[1];
-    const target = parseIndicatorLightPattern(indicatorPatternString);
-    const numLights = target.length;
+  const shapes = parseShapes(shapeLines);
+  const regions = parseRegions(regionLines);
 
-    const joltageMatch = line.match(/\{([^}]+)\}/);
-    const joltageTargets = joltageMatch 
-      ? parseJoltageRequirements(joltageMatch[1]) 
-      : [];
-
-    const afterIndicator = line.substring(line.indexOf(']') + 1);
-    const joltageStart = afterIndicator.indexOf('{');
-    const buttonsSection = joltageStart >= 0 
-      ? afterIndicator.substring(0, joltageStart) 
-      : afterIndicator;
-
-    const buttonMatches = buttonsSection.match(/\(([^)]*)\)/g) || [];
-    const buttons = buttonMatches.map(match => {
-      const content = match.slice(1, -1);
-      return parseButtonAffectedIndices(content);
-    });
-
-    return { numLights, target, buttons, joltageTargets };
-  });
-
-  return { machines };
+  return { shapes, regions };
 };
